@@ -1228,6 +1228,14 @@
     ]
   },{
     "type":"monstergroup",
+    "name" : "GROUP_ZOMBIE_UPGRADE",
+    "default" : "mon_zombie_humter",
+    "monsters" : [
+      { "monster" : "mon_zombie_sprinter", "freq" : 50, "cost_multiplier" : 5 },
+      { "monster" : "mon_zombie_hunter", "freq" : 50, "cost_multiplier" : 5 },
+    ]
+  },{
+    "type":"monstergroup",
     "name" : "GROUP_SAFE", "_comment" : "used by mongroup::is_safe()",
     "default" : "mon_null",
     "monsters" : [
