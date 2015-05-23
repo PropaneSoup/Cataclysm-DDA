@@ -14,6 +14,7 @@ namespace mdefense {
     */
 void zapback           (monster *m, Creature *source, const projectile *proj);
 void acidsplash        (monster *m, Creature *source, const projectile *proj);
+void spikes            (monster *m, Creature *source, const projectile *proj);
 
 void none(monster *, Creature *, const projectile *);
 } //namespace mdefense

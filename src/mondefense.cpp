@@ -84,3 +84,30 @@ void mdefense::acidsplash( monster *const m, Creature *const source, projectile 
                  m->disp_name().c_str(), source->disp_name().c_str() );
     }
 }
+
+void mdefense::spikes( monster *const m, Creature *const source, projectile const *const proj )
+{
+    if( source == nullptr || m == nullptr ) {
+        return;
+    }
+    if( proj != nullptr ) {
+        return;
+    }
+
+    player const *const foe = dynamic_cast<player *>( source );
+    if(foe->has_weapon() || foe->is_wearing_power_armor()){
+        return;  //Attacking with anything but fists or having power gauntlets prevents the damage
+    }
+
+    damage_instance const spike {
+        DT_CUT, static_cast<float>( rng( 1, 5 ) )
+    };
+    source->deal_damage( m, bp_hand_l, spike );
+    source->deal_damage( m, bp_hand_r, spike );
+
+    if( g->u.sees( source->pos() ) ) {
+        auto const msg_type = ( source == &g->u ) ? m_bad : m_info;
+        add_msg( msg_type, _( "You cut your hands on %s's bony body!" ),
+                 m->disp_name().c_str(), source->disp_name().c_str() );
+    }
+}

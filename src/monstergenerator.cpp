@@ -248,7 +248,8 @@ void MonsterGenerator::init_defense()
 {
     defense_map["NONE"] = &mdefense::none; //No special attack-back
     defense_map["ZAPBACK"] = &mdefense::zapback; //Shock attacker on hit
-    defense_map["ACIDSPLASH"] = &mdefense::acidsplash; //Shock attacker on hit
+    defense_map["ACIDSPLASH"] = &mdefense::acidsplash; //Splashes acid around it
+    defense_map["SPIKES"] = &mdefense::spikes; //Damages attacker with spikes
 }
 
 void MonsterGenerator::init_trigger()

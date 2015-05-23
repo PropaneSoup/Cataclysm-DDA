@@ -1224,6 +1224,14 @@
     ]
   },{
     "type":"monstergroup",
+    "name" : "GROUP_ZOMBIE_SKELETON",
+    "default" : "mon_skeleton_spiked",
+    "monsters" : [
+      { "monster" : "mon_skeleton_spiked", "freq" : 50, "cost_multiplier": 0},
+      { "monster" : "mon_skeleton_plated", "freq" : 50, "cost_multiplier": 2}
+    ]
+  },{
+    "type":"monstergroup",
     "name" : "GROUP_ZOMBIE_UPGRADE",
     "default" : "mon_zombie_spitter",
     "//" : "Masters pick from here when upgrading; no dogs, bionics, or profession-types",
@@ -1231,6 +1239,8 @@
       { "monster" : "mon_zombie_grabber", "freq" : 30, "cost_multiplier" : 5 },
       { "monster" : "mon_zombie_hunter", "freq" : 20, "cost_multiplier" : 5 },
       { "monster" : "mon_skeleton", "freq" : 30, "cost_multiplier" : 5 },
+      { "monster" : "mon_skeleton_spiked", "freq" : 20, "cost_multiplier" : 10 },
+      { "monster" : "mon_skeleton_plated", "freq" : 20, "cost_multiplier" : 10 },
       { "monster" : "mon_zombie_smoker", "freq" : 10, "cost_multiplier" : 5 },
       { "monster" : "mon_zombie_gasbag", "freq" : 10, "cost_multiplier": 5},
       { "monster" : "mon_zombie_swimmer", "freq" : 10, "cost_multiplier" : 5 },
@@ -1386,6 +1396,8 @@
       { "monster" : "mon_zombie_electric", "freq" : 10, "cost_multiplier" : 2 },
       { "monster" : "mon_zombie_necro", "freq" : 10, "cost_multiplier" : 10 },
       { "monster" : "mon_zombie_survivor", "freq" : 20, "cost_multiplier" : 5 },
+      { "monster" : "mon_skeleton_spiked", "freq" : 20, "cost_multiplier" : 5 },
+      { "monster" : "mon_skeleton_plated", "freq" : 20, "cost_multiplier" : 5 },
       { "monster" : "mon_boomer", "freq" : 30, "cost_multiplier" : 5 },
       { "monster" : "mon_boomer_huge", "freq" : 20, "cost_multiplier" : 5 },
       { "monster" : "mon_zombie_brute", "freq" : 30, "cost_multiplier" : 10 },
@@ -1396,7 +1408,7 @@
       { "monster" : "mon_zombie_technician", "freq" : 10, "cost_multiplier" : 6},
       { "monster" : "mon_zombie_brute_shocker", "freq" : 10, "cost_multiplier" : 20 },
       { "monster" : "mon_zombie_hollow", "freq" : 2, "cost_multiplier" : 5 },
-      { "monster" : "mon_zombie_predator", "freq" : 5, "cost_multiplier" : 10 }
+      { "monster" : "mon_zombie_predator", "freq" : 5, "cost_multiplier" : 10 } 
     ]
   }
 ]
