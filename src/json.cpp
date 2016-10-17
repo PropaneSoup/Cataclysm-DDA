@@ -22,7 +22,7 @@ bool is_whitespace(char ch)
 }
 
 // for parsing \uxxxx escapes
-std::string utf16_to_utf8(unsigned ch)
+std::string utf16_to_utf8(uint32_t ch)
 {
     char out[5];
     char *buf = out;
@@ -39,7 +39,7 @@ std::string utf16_to_utf8(unsigned ch)
     } else {
         std::stringstream err;
         err << "unknown unicode: " << ch;
-        throw err.str();
+        throw std::runtime_error( err.str() );
     }
 
     buf += utf8Bytes;
@@ -119,7 +119,7 @@ int JsonObject::verify_position(const std::string &name,
     if (pos > start) {
         return pos;
     } else if (throw_exception && !jsin) {
-        throw (std::string)"member lookup on empty object: " + name;
+        throw JsonError( std::string( "member lookup on empty object: " ) + name );
     } else if (throw_exception) {
         jsin->seek(start);
         jsin->error("member not found: " + name);
@@ -320,27 +320,6 @@ JsonObject JsonObject::get_object(const std::string &name)
     return jsin->get_object();
 }
 
-std::set<std::string> JsonObject::get_tags(const std::string &name)
-{
-    std::set<std::string> ret;
-    int pos = positions[name];
-    if (pos <= start) {
-        return ret; // empty set
-    }
-    jsin->seek(pos);
-    // allow single string as tag
-    if (jsin->test_string()) {
-        ret.insert(jsin->get_string());
-        return ret;
-    }
-    // otherwise assume it's an array and error if it isn't.
-    JsonArray jsarr = jsin->get_array();
-    while (jsarr.has_more()) {
-        ret.insert(jsarr.next_string());
-    }
-    return ret;
-}
-
 /* non-fatal member existence and type testing */
 
 bool JsonObject::has_null(const std::string &name)
@@ -484,7 +463,7 @@ std::string JsonArray::str()
 void JsonArray::verify_index(int i)
 {
     if (!jsin) {
-        throw (std::string)"tried to access empty array.";
+        throw JsonError( "tried to access empty array." );
     } else if (i < 0 || size_t(i) >= positions.size()) {
         jsin->seek(start);
         std::stringstream err;
@@ -1006,8 +985,12 @@ std::string JsonIn::get_string()
                 // insert the appropriate unicode character in utf8
                 // TODO: verify that unihex is in fact 4 hex digits.
                 char **endptr = 0;
-                unsigned u = (unsigned)strtoul(unihex, endptr, 16);
-                s += utf16_to_utf8(u);
+                uint32_t u = (uint32_t)strtoul(unihex, endptr, 16);
+                try {
+                    s += utf16_to_utf8(u);
+                } catch( const std::exception &err ) {
+                    error( err.what() );
+                }
             } else {
                 // for anything else, just add the character, i suppose
                 s += ch;
@@ -1030,9 +1013,9 @@ std::string JsonIn::get_string()
         seek(startpos);
         error("couldn't find end of string, reached EOF.");
     } else if (stream->fail()) {
-        throw (std::string)"stream failure while reading string.";
+        throw JsonError( "stream failure while reading string." );
     }
-    throw (std::string)"something went wrong D:";
+    throw JsonError( "something went wrong D:" );
 }
 
 int JsonIn::get_int()
@@ -1147,7 +1130,7 @@ bool JsonIn::get_bool()
     }
     err << "not a boolean value! expected 't' or 'f' but got '" << ch << "'";
     error(err.str(), -1);
-    throw (std::string)"warnings are silly";
+    throw JsonError( "warnings are silly" );
 }
 
 JsonObject JsonIn::get_object()
@@ -1310,6 +1293,46 @@ bool JsonIn::read(char &c)
     return true;
 }
 
+bool JsonIn::read(signed char &c)
+{
+    if (!test_number()) {
+        return false;
+    }
+    // TODO: test for overflow
+    c = get_int();
+    return true;
+}
+
+bool JsonIn::read( unsigned char &c )
+{
+    if( !test_number() ) {
+        return false;
+    }
+    // TODO: test for overflow
+    c = get_int();
+    return true;
+}
+
+bool JsonIn::read(short unsigned int &s)
+{
+    if (!test_number()) {
+        return false;
+    }
+    // TODO: test for overflow
+    s = get_int();
+    return true;
+}
+
+bool JsonIn::read(short int &s)
+{
+    if (!test_number()) {
+        return false;
+    }
+    // TODO: test for overflow
+    s = get_int();
+    return true;
+}
+
 bool JsonIn::read(int &i)
 {
     if (!test_number()) {
@@ -1396,7 +1419,7 @@ bool JsonIn::read(JsonDeserializer &j)
     try {
         j.deserialize(*this);
         return true;
-    } catch (std::string e) {
+    } catch( const JsonError & ) {
         return false;
     }
 }
@@ -1443,7 +1466,7 @@ void JsonIn::error(std::string message, int offset)
     err << line_number(offset) << ": " << message;
     // if we can't get more info from the stream don't try
     if (!stream->good()) {
-        throw err.str();
+        throw JsonError( err.str() );
     }
     // also print surrounding few lines of context, if not too large
     err << "\n\n";
@@ -1451,9 +1474,8 @@ void JsonIn::error(std::string message, int offset)
     size_t pos = tell();
     rewind(3, 240);
     size_t startpos = tell();
-    char buffer[241];
-    stream->read(&buffer[0], pos - startpos);
-    buffer[pos - startpos] = '\0';
+    std::string buffer( pos - startpos, '\0' );
+    stream->read( &buffer[0], pos - startpos );
     err << buffer;
     if (!is_whitespace(peek())) {
         err << peek();
@@ -1497,7 +1519,7 @@ void JsonIn::error(std::string message, int offset)
             break;
         }
     }
-    throw err.str();
+    throw JsonError( err.str() );
 }
 
 void JsonIn::rewind(int max_lines, int max_chars)
@@ -1824,6 +1846,16 @@ void JsonDeserializer::deserialize(std::istream &i)
 {
     JsonIn jin(i);
     deserialize(jin);
+}
+
+JsonError::JsonError( const std::string &msg )
+: std::runtime_error( msg )
+{
+}
+
+std::ostream &operator<<( std::ostream &stream, const JsonError &err )
+{
+    return stream << err.what();
 }
 
 // Need to instantiate those template to make them available for other compilation units.

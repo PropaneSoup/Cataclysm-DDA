@@ -3,17 +3,16 @@
 
 #include <climits>
 #include <cassert>
-#include <algorithm>
 
 #include "json.h" // (de)serialization for points
 
 #ifndef sgn
-#define sgn(x) (((x) < 0) ? -1 : 1)
+#define sgn(x) (((x) < 0) ? -1 : (((x)>0) ? 1 : 0))
 #endif
 
 // By default unordered_map doesn't have a hash for tuple or pairs, so we need to include some.
 // This is taken almost directly from the boost library code.
-// Function has to live in the std namespace 
+// Function has to live in the std namespace
 // so that it is picked up by argument-dependent name lookup (ADL).
 namespace std{
     namespace
@@ -53,15 +52,15 @@ namespace std{
     }
 
     template <typename ... TT>
-    struct hash<std::tuple<TT...>> 
+    struct hash<std::tuple<TT...>>
     {
         size_t
         operator()(std::tuple<TT...> const& tt) const
-        {                                              
-            size_t seed = 0;                             
-            HashValueImpl<std::tuple<TT...> >::apply(seed, tt);    
-            return seed;                                 
-        }                                              
+        {
+            size_t seed = 0;
+            HashValueImpl<std::tuple<TT...> >::apply(seed, tt);
+            return seed;
+        }
 
     };
 
@@ -77,6 +76,22 @@ namespace std{
     };
 }
 
+//Used for autopickup and safemode rules
+enum rule_state : int {
+    RULE_NONE,
+    RULE_WHITELISTED,
+    RULE_BLACKLISTED
+};
+
+enum visibility_type {
+  VIS_HIDDEN,
+  VIS_CLEAR,
+  VIS_LIT,
+  VIS_BOOMER,
+  VIS_DARK,
+  VIS_BOOMER_DARK
+};
+
 enum special_game_id {
     SGAME_NULL = 0,
     SGAME_TUTORIAL,
@@ -84,7 +99,7 @@ enum special_game_id {
     NUM_SPECIAL_GAMES
 };
 
-enum art_effect_passive {
+enum art_effect_passive : int {
     AEP_NULL = 0,
     // Good
     AEP_STR_UP, // Strength + 4
@@ -93,7 +108,7 @@ enum art_effect_passive {
     AEP_INT_UP, // Intelligence + 4
     AEP_ALL_UP, // All stats + 2
     AEP_SPEED_UP, // +20 speed
-    AEP_IODINE, // Reduces radiation
+    AEP_PBLUE, // Reduces radiation
     AEP_SNAKES, // Summons friendly snakes when you're hit
     AEP_INVISIBLE, // Makes you invisible
     AEP_CLAIRVOYANCE, // See through walls
@@ -152,7 +167,7 @@ enum artifact_natural_property {
     ARTPROP_MAX
 };
 
-enum phase_id {
+enum phase_id : int {
     PNULL, SOLID, LIQUID, GAS, PLASMA
 };
 
@@ -177,12 +192,13 @@ enum object_type {
 struct point : public JsonSerializer, public JsonDeserializer {
     int x;
     int y;
-    point(int X = 0, int Y = 0) : x (X), y (Y) {}
+    point() : x(0), y(0) {}
+    point(int X, int Y) : x (X), y (Y) {}
     point(point &&) = default;
     point(const point &) = default;
     point &operator=(point &&) = default;
     point &operator=(const point &) = default;
-    ~point() {}
+    ~point() override {}
     using JsonSerializer::serialize;
     void serialize(JsonOut &jsout) const override
     {
@@ -256,7 +272,7 @@ struct tripoint : public JsonSerializer, public JsonDeserializer {
     tripoint &operator=(tripoint &&) = default;
     tripoint &operator=(const tripoint &) = default;
     explicit tripoint(const point &p, int Z) : x (p.x), y (p.y), z (Z) {}
-    ~tripoint() {}
+    ~tripoint() override {}
     using JsonSerializer::serialize;
     void serialize(JsonOut &jsout) const override
     {
@@ -314,6 +330,13 @@ struct tripoint : public JsonSerializer, public JsonDeserializer {
         y -= rhs.y;
         return *this;
     }
+    tripoint &operator-=( const tripoint &rhs )
+    {
+        x -= rhs.x;
+        y -= rhs.y;
+        z -= rhs.z;
+        return *this;
+    }
 };
 
 // Make tripoint hashable so it can be used as an unordered_set or unordered_map key,
@@ -353,22 +376,6 @@ inline bool operator<(const tripoint &a, const tripoint &b)
 }
 
 static const tripoint tripoint_min { INT_MIN, INT_MIN, INT_MIN };
-
-// turns a vector, into an array, via MAGIC(tm)
-template <typename T, std::size_t N>
-std::array<T, N> vec_to_array(const std::vector<T> &vec)
-{
-    std::array<T, N> array;
-    for(size_t i = 0; i < N; ++i) {
-        array[i] = vec[i];
-    }
-    return array;
-}
-
-template <typename T, typename C>
-inline bool is_any_of(const T &t, const C &c)
-{
-    return std::find(c.begin(), c.end(), t) != c.end();
-}
+static const tripoint tripoint_zero { 0, 0, 0 };
 
 #endif
